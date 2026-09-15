@@ -1,0 +1,10 @@
+document.addEventListener("DOMContentLoaded",()=>{
+    chrome.storage.local.get(
+        ["totalScanned","totalHOF","totalSafe"],
+        data=>{
+            document.getElementById("totalScanned").textContent=data.totalScanned||0;
+            document.getElementById("totalHOF").textContent=data.totalHOF||0;
+            document.getElementById("totalSafe").textContent=data.totalSafe||0;
+        }
+    );
+});

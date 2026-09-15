@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# ML models
+*.safetensors
+*.h5
+*.pt
+*.pth
+*.bin
+
+# Model directories
+backend/model/
+
+# report
+backend/feedback.json
+
+# Logs
+*.log
+
+# Environment
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
