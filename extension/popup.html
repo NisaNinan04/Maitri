@@ -1,35 +1,40 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="UTF-8">
     <title>Marathi Hate Detector</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body class="popup-body">
     <div class="popup-container">
         <h2>Marathi Hate Detector</h2>
         <p>Real-time Marathi safety protection</p>
+
         <div class="status-box">
             <div class="status-dot"></div>
             <span>Detector Active</span>
         </div>
+
         <div class="popup-info">
             <b>Messages Scanned:</b>
             <span id="totalScanned">0</span>
             <br><br>
+
             <b>Harmful Messages:</b>
             <span id="totalHOF">0</span>
             <br><br>
+
             <b>Safe Messages:</b>
             <span id="totalSafe">0</span>
             <br><br>
+
             <b>Platform:</b>
             <span id="platform">Social Media</span>
         </div>
+
+        <button id="feedbackButton">Reported Errors</button>
     </div>
+
     <script src="popup.js"></script>
 </body>
-
 </html>

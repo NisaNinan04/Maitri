@@ -8,3 +8,12 @@ document.addEventListener("DOMContentLoaded",()=>{
         }
     );
 });
+
+document.getElementById("feedbackButton").addEventListener(
+    "click",
+    ()=>{
+        chrome.tabs.create({
+            url:chrome.runtime.getURL("feedback.html")
+        });
+    }
+);
