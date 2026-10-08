@@ -2,6 +2,8 @@ from flask import Flask,request,jsonify
 from flask_cors import CORS
 import torch
 from transformers import AutoTokenizer,AutoModelForSequenceClassification
+import pyiwn
+import re
 import os
 import json
 from datetime import datetime
@@ -19,11 +21,13 @@ print("Model exists:",os.path.exists(MODEL_PATH))
 if not os.path.exists(MODEL_PATH):
     raise FileNotFoundError("Model folder not found: "+MODEL_PATH)
 
+# Load IndicBERT tokenizer
 tokenizer=AutoTokenizer.from_pretrained(
     MODEL_PATH,
     local_files_only=True
 )
 
+# Load trained IndicBERT classification model
 model=AutoModelForSequenceClassification.from_pretrained(
     MODEL_PATH,
     local_files_only=True
@@ -33,11 +37,82 @@ model.eval()
 
 print("BERT model loaded successfully")
 
+# Load Marathi IndoWordNet
+try:
+    iwn=pyiwn.IndoWordNet(
+        lang=pyiwn.Language.MARATHI
+    )
+    print("Marathi IndoWordNet loaded successfully")
+except Exception as e:
+    iwn=None
+    print("IndoWordNet loading error:",e)
+
+def tokenize_marathi(text):
+    return re.findall(
+        r"[\u0900-\u097F]+",
+        text
+    )
+
+def get_wordnet_information(word):
+    if iwn is None:
+        return {
+            "word":word,
+            "lemma":word,
+            "synsets":[],
+            "error":"IndoWordNet not available"
+        }
+
+    try:
+        lemma=iwn.morph(word)
+
+        if isinstance(lemma,list):
+            lemma=lemma[0] if lemma else word
+
+        synsets=iwn.synsets(lemma)
+
+        results=[]
+
+        for syn in synsets[:3]:
+            results.append({
+                "synset":str(syn),
+                "pos":str(syn.pos()),
+                "head_word":str(syn.head_word()),
+                "gloss":str(syn.gloss()),
+                "examples":[str(x) for x in syn.examples()],
+                "lemmas":[str(x) for x in syn.lemma_names()]
+            })
+
+        return {
+            "word":word,
+            "lemma":str(lemma),
+            "synsets":results
+        }
+
+    except Exception as e:
+        return {
+            "word":word,
+            "lemma":word,
+            "synsets":[],
+            "error":str(e)
+        }
+
+def analyze_marathi_semantics(text):
+    words=tokenize_marathi(text)
+    semantic_results=[]
+    for word in words:
+        information=get_wordnet_information(word)
+        if information["synsets"]:
+            semantic_results.append(information)
+
+    return semantic_results
+
 @app.route("/",methods=["GET"])
 def home():
     return jsonify({
         "status":"running",
-        "message":"Marathi Hate Speech Detection API is running"
+        "message":"MAITRI Marathi Hate Speech Detection API is running",
+        "model":"IndicBERT",
+        "semantic_dictionary":"Marathi IndoWordNet"
     })
 
 @app.route("/predict",methods=["POST"])
@@ -52,6 +127,10 @@ def predict():
     if not text:
         return jsonify({"error":"Text cannot be empty"}),400
 
+    # Semantic analysis using Marathi IndoWordNet
+    semantic_info=analyze_marathi_semantics(text)
+
+    # Contextual analysis using trained IndicBERT
     inputs=tokenizer(
         text,
         return_tensors="pt",
@@ -63,7 +142,6 @@ def predict():
     with torch.no_grad():
         outputs=model(**inputs)
         probabilities=torch.softmax(outputs.logits,dim=1)
-
     prediction=torch.argmax(probabilities,dim=1).item()
 
     not_probability=probabilities[0][0].item()*100
@@ -92,7 +170,8 @@ def predict():
         "confidence":round(confidence,2),
         "hof_probability":round(hof_probability,2),
         "not_probability":round(not_probability,2),
-        "risk":risk
+        "risk":risk,
+        "semantic_analysis":semantic_info
     })
 
 @app.route("/feedback",methods=["POST"])
